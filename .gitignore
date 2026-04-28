@@ -44,6 +44,7 @@ test-results
 
 # AI coding assistants — never commit local agent state, plans, sessions, or MCP keys
 .claude/
+.agents/
 .cursor/
 .cursorrules
 .cursorignore

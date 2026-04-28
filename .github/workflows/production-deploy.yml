@@ -73,12 +73,15 @@ jobs:
         env:
           NODE_ENV: production
           NEXT_PUBLIC_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.PRODUCTION_WEBSITE_URL }}
+          NEXT_PUBLIC_DASHBOARD_URL: ${{ vars.PRODUCTION_DASHBOARD_URL }}
 
       - name: Build dashboard
         run: bun run build:dashboard
         env:
           NODE_ENV: production
           VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+          VITE_WEBSITE_URL: ${{ vars.PRODUCTION_WEBSITE_URL }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -104,7 +107,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy website-dist --project-name=production-website
+          command: pages deploy website-dist --project-name=shopora-website --branch=production
 
   deploy-dashboard:
     needs: build-static
@@ -118,4 +121,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dashboard-dist --project-name=production-dashboard
+          command: pages deploy dashboard-dist --project-name=shopora-dashboard --branch=production

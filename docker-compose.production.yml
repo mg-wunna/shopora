@@ -15,6 +15,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - MONGO_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/template?authSource=admin
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - WEBSITE_URL=${WEBSITE_URL}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STORAGE_PATH=/app/storage
     volumes:
       - storage:/app/storage

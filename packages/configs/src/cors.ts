@@ -66,4 +66,4 @@ export function corsOriginHandler(origin: string | undefined): string | undefine
   return prodOrigins.includes(origin) ? origin : undefined;
 }
 
-export const corsOrigins = isDev ? devOrigins : buildProdOrigins();
+export const corsOrigins = isDev ? devOrigins : getProdOrigins();

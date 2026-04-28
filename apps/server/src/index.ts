@@ -5,11 +5,13 @@ import { ports } from "@template/configs/ports";
 import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { RPCHandler } from "@orpc/server/fetch";
+import { ZodToJsonSchemaConverter } from "@orpc/zod";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { rateLimiter } from "hono-rate-limiter";
 import mongoose from "mongoose";
+import { userFromAuthHeader } from "./auth.js";
 import { appRouter } from "./router.js";
 
 const app = new Hono();
@@ -61,14 +63,16 @@ app.use(
 app.get("/health", (c) => c.json({ status: "ok", timestamp: Date.now() }));
 
 // --- OpenAPI spec + Scalar docs ---
-const generator = new OpenAPIGenerator({});
+const generator = new OpenAPIGenerator({
+  schemaConverters: [new ZodToJsonSchemaConverter()],
+});
 
 app.get("/openapi.json", async (c) => {
   const spec = await generator.generate(appRouter, {
     info: {
-      title: "Template API",
+      title: "Shopora API",
       version: "1.0.0",
-      description: "Auto-generated from oRPC router",
+      description: "E-commerce API for Shopora",
     },
     servers: [{ url: "/v1" }],
     security: [{ bearerAuth: [] }],
@@ -85,15 +89,27 @@ app.get("/docs", (c) => {
   const html = `<!doctype html>
 <html>
 <head>
-  <title>API Reference</title>
+  <title>Shopora API Reference</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin: 0; background: #000; }
+  </style>
 </head>
 <body>
   <div id="app"></div>
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   <script>
-    Scalar.createApiReference('#app', { url: '/openapi.json' })
+    Scalar.createApiReference('#app', {
+      url: '/openapi.json',
+      theme: 'kepler',
+      layout: 'modern',
+      darkMode: true,
+      metaData: {
+        title: 'Shopora API Reference',
+        description: 'OpenAPI reference for the Shopora commerce API.'
+      }
+    })
   </script>
 </body>
 </html>`;
@@ -104,9 +120,10 @@ app.get("/docs", (c) => {
 const openApiHandler = new OpenAPIHandler(appRouter);
 
 app.all("/v1/*", async (c) => {
+  const user = await userFromAuthHeader(c.req.header("authorization"));
   const { matched, response } = await openApiHandler.handle(c.req.raw, {
     prefix: "/v1",
-    context: {},
+    context: { user },
   });
   if (matched && response) return response;
   return c.json({ error: "Not found" }, 404);
@@ -116,9 +133,10 @@ app.all("/v1/*", async (c) => {
 const rpcHandler = new RPCHandler(appRouter);
 
 app.all("/rpc/*", async (c) => {
+  const user = await userFromAuthHeader(c.req.header("authorization"));
   const { response } = await rpcHandler.handle(c.req.raw, {
     prefix: "/rpc",
-    context: {},
+    context: { user },
   });
   return response ?? c.json({ error: "Not found" }, 404);
 });

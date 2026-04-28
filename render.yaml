@@ -19,3 +19,9 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: WEBSITE_URL
+        value: https://staging.shopora-website.pages.dev
+      - key: CORS_ORIGINS
+        value: https://staging.shopora-website.pages.dev,https://staging.shopora-dashboard.pages.dev
