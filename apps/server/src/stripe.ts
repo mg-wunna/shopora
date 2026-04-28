@@ -70,7 +70,7 @@ export function getCheckoutReturnUrl(requestOrigin?: string | null): string {
 export function getStripeEnvironmentLabel(returnUrl: string): string {
   try {
     const hostname = new URL(returnUrl).hostname;
-    if (hostname.startsWith("staging.")) return "staging";
+    if (hostname.startsWith("staging.") || hostname.endsWith(".pages.dev")) return "staging";
     if (hostname === "localhost" || hostname === "127.0.0.1") return "local";
     return "production";
   } catch {
