@@ -13,7 +13,12 @@ RUN bun -e " \
   await Bun.write('package.json', JSON.stringify(pkg, null, 2)); \
 "
 RUN bun install --ignore-scripts
-RUN tar czf /tmp/node_modules.tar.gz -C / app/node_modules app/apps/server/node_modules
+RUN mkdir -p apps/server/node_modules packages/api/node_modules packages/configs/node_modules && \
+  tar czf /tmp/node_modules.tar.gz -C / \
+    app/node_modules \
+    app/apps/server/node_modules \
+    app/packages/api/node_modules \
+    app/packages/configs/node_modules
 
 FROM base AS runner
 WORKDIR /app
