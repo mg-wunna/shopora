@@ -15,10 +15,16 @@ import {
   type UserDoc,
 } from "./models.js";
 import { toCategory, toDiscount, toOrder, toProduct, toUser } from "./serialize.js";
-import { getStripeClient, getWebsiteUrl } from "./stripe.js";
+import {
+  getCheckoutReturnUrl,
+  getStripeClient,
+  getStripeEnvironmentLabel,
+  getWebsiteUrl,
+} from "./stripe.js";
 
 export interface Ctx {
   user: UserDoc | null;
+  origin: string | null;
 }
 
 const os = implement(appContract).$context<Ctx>();
@@ -42,10 +48,10 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function toStripeImageUrl(image: string): string | undefined {
+function toStripeImageUrl(image: string, websiteUrl = getWebsiteUrl()): string | undefined {
   if (!image) return undefined;
   if (/^https?:\/\//.test(image)) return image;
-  if (image.startsWith("/")) return `${getWebsiteUrl()}${image}`;
+  if (image.startsWith("/")) return `${websiteUrl}${image}`;
   return undefined;
 }
 
@@ -392,24 +398,37 @@ export const appRouter = os.router({
           message: "Stripe is not configured. Add STRIPE_SECRET_KEY to .env.development.",
         });
 
-      const websiteUrl = getWebsiteUrl();
+      const websiteUrl = getCheckoutReturnUrl(context.origin);
+      const stripeEnvironment = getStripeEnvironmentLabel(websiteUrl);
+      const metadata = {
+        orderId: order._id.toString(),
+        userId: user._id.toString(),
+        environment: stripeEnvironment,
+      };
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         customer_email: user.email,
         client_reference_id: order._id.toString(),
         success_url: `${websiteUrl}/order/?id=${order._id.toString()}&stripe=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${websiteUrl}/checkout?stripe=cancelled`,
-        metadata: {
-          orderId: order._id.toString(),
-          userId: user._id.toString(),
+        metadata,
+        custom_text: {
+          submit: {
+            message: `Shopora ${stripeEnvironment} test checkout. Use Stripe test card 4242 4242 4242 4242 with any future expiry and CVC.`,
+          },
+        },
+        payment_intent_data: {
+          description: `Shopora ${stripeEnvironment} order ${order._id.toString()}`,
+          metadata,
         },
         line_items: order.items.map((it) => {
-          const imageUrl = toStripeImageUrl(it.image);
+          const imageUrl = toStripeImageUrl(it.image, websiteUrl);
           return {
             price_data: {
               currency: "usd",
               product_data: {
                 name: it.name,
+                description: `Shopora ${stripeEnvironment} order item`,
                 ...(imageUrl ? { images: [imageUrl] } : {}),
               },
               unit_amount: Math.round(it.price * 100),

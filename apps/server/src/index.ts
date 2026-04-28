@@ -123,7 +123,7 @@ app.all("/v1/*", async (c) => {
   const user = await userFromAuthHeader(c.req.header("authorization"));
   const { matched, response } = await openApiHandler.handle(c.req.raw, {
     prefix: "/v1",
-    context: { user },
+    context: { user, origin: c.req.header("origin") ?? null },
   });
   if (matched && response) return response;
   return c.json({ error: "Not found" }, 404);
@@ -136,7 +136,7 @@ app.all("/rpc/*", async (c) => {
   const user = await userFromAuthHeader(c.req.header("authorization"));
   const { response } = await rpcHandler.handle(c.req.raw, {
     prefix: "/rpc",
-    context: { user },
+    context: { user, origin: c.req.header("origin") ?? null },
   });
   return response ?? c.json({ error: "Not found" }, 404);
 });
